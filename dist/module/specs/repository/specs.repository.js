@@ -79,9 +79,9 @@ class SpecRepository {
         };
     }
     static async getSpecList(userId) {
-        const specInputCollection = dbConnection_1.default.getDB().collection(this.specInputCollectionName);
-        const data = await specInputCollection
-            .find({ userId: new mongodb_1.ObjectId(userId) }, { projection: { _id: 1, title: 1 } })
+        const specOutputCollection = dbConnection_1.default.getDB().collection(this.specOutputCollectionName);
+        const data = await specOutputCollection
+            .find({ userId: new mongodb_1.ObjectId(userId), version: 1 }, { projection: { _id: 1, title: 1 } })
             .sort({ _id: -1 }) // optional: newest first
             .limit(5)
             .toArray();

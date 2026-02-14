@@ -48,7 +48,6 @@ class SpecsController {
     }
     static async getSpecsList(req, res) {
         try {
-            console.log("Testing");
             const userId = req.user?.userId;
             const data = await sepcs_service_1.default.getSpecsListService(userId);
             return (0, response_handler_1.sendSuccess)(res, 200, "Data retrieved successfully", data);

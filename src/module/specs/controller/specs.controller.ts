@@ -58,7 +58,6 @@ class SpecsController {
 
   static async getSpecsList(req: Request, res: Response): Promise<any> {
     try {
-      console.log("Testing");
       const userId = req.user?.userId as string;
       const data = await SpecsService.getSpecsListService(userId);
 

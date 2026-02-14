@@ -109,13 +109,13 @@ export class SpecRepository {
   }
 
   static async getSpecList(userId: string): Promise<SpecInput[]> {
-    const specInputCollection = Database.getDB().collection<SpecInput>(
-      this.specInputCollectionName,
+    const specOutputCollection = Database.getDB().collection<SpecInput>(
+      this.specOutputCollectionName,
     );
 
-    const data = await specInputCollection
+    const data = await specOutputCollection
       .find(
-        { userId: new ObjectId(userId) },
+        { userId: new ObjectId(userId), version: 1 },
         { projection: { _id: 1, title: 1 } },
       )
       .sort({ _id: -1 }) // optional: newest first
