@@ -26,6 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const mongodb_1 = require("mongodb");
 const prompt_1 = require("../../../constants/prompt");
 const errorHandler_1 = __importDefault(require("../../../middleware/errorHandler"));
 const hugging_ai_service_1 = __importDefault(require("../../ai/hugging.ai.service"));
@@ -81,6 +82,24 @@ class SpecsService {
     static async getSpecsListService(userId) {
         const data = await specs_repository_1.SpecRepository.getSpecList(userId);
         return data;
+    }
+    static async updateSpecs(userId, specId, data) {
+        if (!data) {
+            throw new errorHandler_1.default(400, "No response body provided");
+        }
+        if (!mongodb_1.ObjectId.isValid(specId)) {
+            throw new errorHandler_1.default(400, "Invalid Spec Id");
+        }
+        const validatedBody = specs_validator_1.default.updateSpecOutputValidator(data);
+        const isSpecExists = await specs_repository_1.SpecRepository.getSpecOutputCheck(userId);
+        if (!isSpecExists) {
+            throw new errorHandler_1.default(404, "Spec not found");
+        }
+        const isUpdated = await specs_repository_1.SpecRepository.updateSpecs(userId, specId, validatedBody);
+        if (!isUpdated) {
+            throw new errorHandler_1.default(500, "Failed to update specs");
+        }
+        return;
     }
 }
 exports.default = SpecsService;

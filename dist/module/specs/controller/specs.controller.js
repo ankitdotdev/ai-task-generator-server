@@ -20,10 +20,6 @@ class SpecsController {
         try {
             // Extract authenticated user ID (set by auth middleware)
             const userId = req.user?.userId;
-            // Reject request if user is not authenticated
-            if (!userId) {
-                return (0, response_handler_1.sendError)(res, 401, "Unauthorized Access");
-            }
             // Optional query parameter for regenerating an existing spec
             const specInputId = req.query.specInputId;
             // Delegate core logic to service layer
@@ -52,10 +48,34 @@ class SpecsController {
     }
     static async getSpecsList(req, res) {
         try {
-            console.log("Testing");
             const userId = req.user?.userId;
             const data = await sepcs_service_1.default.getSpecsListService(userId);
             return (0, response_handler_1.sendSuccess)(res, 200, "Data retrieved successfully", data);
+        }
+        catch (error) {
+            // Handle known errors thrown within the application
+            if (error instanceof errorHandler_1.default) {
+                return (0, response_handler_1.sendError)(res, error.statusCode, error.message);
+            }
+            else if (error instanceof Error) {
+                // Handle unexpected errors
+                return (0, response_handler_1.sendError)(res, 500, "Internal Server Error");
+            }
+            else {
+                // Handle unknown errors
+                return (0, response_handler_1.sendError)(res, 500, "Internal Server Error");
+            }
+        }
+    }
+    static async updateSpecs(req, res) {
+        try {
+            const userId = req.user?.userId;
+            const specId = req.params.id;
+            if (!specId) {
+                return (0, response_handler_1.sendError)(res, 400, "Spec id missing");
+            }
+            await sepcs_service_1.default.updateSpecs(userId, specId, req.body);
+            return (0, response_handler_1.sendSuccess)(res, 200, "Specs Updated Succesfully");
         }
         catch (error) {
             // Handle known errors thrown within the application

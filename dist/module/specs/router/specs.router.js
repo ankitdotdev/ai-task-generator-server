@@ -8,6 +8,8 @@ const specs_controller_1 = __importDefault(require("../controller/specs.controll
 const authMiddleware_1 = __importDefault(require("../../../middleware/authMiddleware"));
 const specsRouter = (0, express_1.Router)();
 specsRouter.use(authMiddleware_1.default.validateToken);
+specsRouter.use(authMiddleware_1.default.checkUserExists);
 specsRouter.get("/", specs_controller_1.default.getSpecsList);
-specsRouter.post("/generate", specs_controller_1.default.generateSpecs);
+specsRouter.post("/", specs_controller_1.default.generateSpecs);
+specsRouter.patch("/:id", specs_controller_1.default.updateSpecs);
 exports.default = specsRouter;

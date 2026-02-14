@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { buildPrompt } from "../../../constants/prompt";
 import ThrowError from "../../../middleware/errorHandler";
 import queryModel from "../../ai/hugging.ai.service";
@@ -80,10 +81,43 @@ class SpecsService {
     };
   }
 
-  static async getSpecsListService(userId:string): Promise<SpecInput[]> {
+  static async getSpecsListService(userId: string): Promise<SpecInput[]> {
     const data = await SpecRepository.getSpecList(userId);
 
     return data;
+  }
+
+  static async updateSpecs(
+    userId: string,
+    specId: string,
+    data: Partial<AISpecOutput>,
+  ): Promise<void> {
+    if (!data) {
+      throw new ThrowError(400, "No response body provided");
+    }
+
+    if (!ObjectId.isValid(specId)) {
+      throw new ThrowError(400, "Invalid Spec Id");
+    }
+
+    const validatedBody = SpecsValidator.updateSpecOutputValidator(data);
+
+    const isSpecExists = await SpecRepository.getSpecOutputCheck(userId);
+
+    if (!isSpecExists) {
+      throw new ThrowError(404, "Spec not found");
+    }
+
+    const isUpdated = await SpecRepository.updateSpecs(
+      userId,
+      specId,
+      validatedBody,
+    );
+
+    if (!isUpdated) {
+      throw new ThrowError(500, "Failed to update specs");
+    }
+    return;
   }
 }
 

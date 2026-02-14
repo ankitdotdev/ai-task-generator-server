@@ -5,7 +5,9 @@ import AuthMiddleware from "../../../middleware/authMiddleware";
 const specsRouter = Router();
 
 specsRouter.use(AuthMiddleware.validateToken);
+specsRouter.use(AuthMiddleware.checkUserExists);
 specsRouter.get("/", SpecsController.getSpecsList);
-specsRouter.post("/generate", SpecsController.generateSpecs);
+specsRouter.post("/", SpecsController.generateSpecs);
+specsRouter.patch("/:id", SpecsController.updateSpecs);
 
 export default specsRouter;
