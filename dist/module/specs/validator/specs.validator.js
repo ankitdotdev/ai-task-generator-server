@@ -60,71 +60,36 @@ class SpecsValidator {
     }
     static updateSpecOutputValidator(data) {
         const validatedBody = {};
-        // specInputId
-        if (data.specInputId !== undefined) {
-            if (typeof data.specInputId !== "string" || !data.specInputId.trim()) {
-                throw new errorHandler_1.default(400, "specInputId must be a non-empty string");
-            }
-            validatedBody.specInputId = data.specInputId.trim();
+        const source = data.output ?? data; // accept both formats
+        if (typeof source !== "object" || source === null) {
+            throw new errorHandler_1.default(400, "output must be an object");
         }
-        // version
-        if (data.version !== undefined) {
-            if (typeof data.version !== "number" || data.version < 0) {
-                throw new errorHandler_1.default(400, "version must be a positive number");
+        const validatedOutput = {};
+        const validateSpecItems = (items, fieldName) => {
+            if (!Array.isArray(items)) {
+                throw new errorHandler_1.default(400, `${fieldName} must be an array`);
             }
-            validatedBody.version = data.version;
-        }
-        // generatedAt
-        if (data.generatedAt !== undefined) {
-            if (!(data.generatedAt instanceof Date) ||
-                isNaN(data.generatedAt.getTime())) {
-                throw new errorHandler_1.default(400, "generatedAt must be a valid Date");
-            }
-            validatedBody.generatedAt = data.generatedAt;
-        }
-        // aiModel
-        if (data.aiModel !== undefined) {
-            if (typeof data.aiModel !== "string") {
-                throw new errorHandler_1.default(400, "aiModel must be a string");
-            }
-            validatedBody.aiModel = data.aiModel.trim();
-        }
-        // output (nested object)
-        if (data.output !== undefined) {
-            if (typeof data.output !== "object" || data.output === null) {
-                throw new errorHandler_1.default(400, "output must be an object");
-            }
-            const validatedOutput = {};
-            const validateSpecItems = (items, fieldName) => {
-                if (!Array.isArray(items)) {
-                    throw new errorHandler_1.default(400, `${fieldName} must be an array`);
+            return items.map((item) => {
+                if (typeof item !== "object" ||
+                    typeof item.id !== "string" ||
+                    typeof item.content !== "string") {
+                    throw new errorHandler_1.default(400, `Invalid ${fieldName} item`);
                 }
-                return items.map((item) => {
-                    if (typeof item !== "object" ||
-                        typeof item.id !== "string" ||
-                        typeof item.content !== "string") {
-                        throw new errorHandler_1.default(400, `Invalid ${fieldName} item`);
-                    }
-                    return {
-                        id: item.id.trim(),
-                        content: item.content.trim(),
-                    };
-                });
-            };
-            if (data.output.userStories !== undefined) {
-                validatedOutput.userStories = validateSpecItems(data.output.userStories, "userStories");
-            }
-            if (data.output.engineeringTasks !== undefined) {
-                validatedOutput.engineeringTasks = validateSpecItems(data.output.engineeringTasks, "engineeringTasks");
-            }
-            if (data.output.risks !== undefined) {
-                validatedOutput.risks = validateSpecItems(data.output.risks, "risks");
-            }
-            if (data.output.unknowns !== undefined) {
-                validatedOutput.unknowns = validateSpecItems(data.output.unknowns, "unknowns");
-            }
-            validatedBody.output = validatedOutput;
-        }
+                return {
+                    id: item.id.trim(),
+                    content: item.content.trim(),
+                };
+            });
+        };
+        if (source.userStories !== undefined)
+            validatedOutput.userStories = validateSpecItems(source.userStories, "userStories");
+        if (source.engineeringTasks !== undefined)
+            validatedOutput.engineeringTasks = validateSpecItems(source.engineeringTasks, "engineeringTasks");
+        if (source.risks !== undefined)
+            validatedOutput.risks = validateSpecItems(source.risks, "risks");
+        if (source.unknowns !== undefined)
+            validatedOutput.unknowns = validateSpecItems(source.unknowns, "unknowns");
+        validatedBody.output = validatedOutput;
         return validatedBody;
     }
 }

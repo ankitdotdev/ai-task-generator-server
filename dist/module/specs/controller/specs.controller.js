@@ -69,6 +69,7 @@ class SpecsController {
     }
     static async updateSpecs(req, res) {
         try {
+            console.log("Hitting it or not", req.params.id);
             const userId = req.user?.userId;
             const specId = req.params.id;
             if (!specId) {

@@ -79,13 +79,13 @@ class SpecsController {
 
   static async updateSpecs(req: Request, res: Response): Promise<any> {
     try {
+      console.log("Hitting it or not", req.params.id);
       const userId = req.user?.userId as string;
 
       const specId = req.params.id as string;
       if (!specId) {
         return sendError(res, 400, "Spec id missing");
       }
-
       await SpecsService.updateSpecs(userId, specId, req.body);
 
       return sendSuccess(res, 200, "Specs Updated Succesfully");
@@ -112,8 +112,7 @@ class SpecsController {
         return sendError(res, 400, "Spec id is missing");
       }
 
-
-      const data =await SpecsService.getSpecsOutputData(userId,specId)
+      const data = await SpecsService.getSpecsOutputData(userId, specId);
 
       return sendSuccess(res, 200, "Data retrieved successfully", data);
     } catch (error) {

@@ -91,10 +91,11 @@ class SpecsService {
             throw new errorHandler_1.default(400, "Invalid Spec Id");
         }
         const validatedBody = specs_validator_1.default.updateSpecOutputValidator(data);
-        const isSpecExists = await specs_repository_1.SpecRepository.getSpecOutputCheck(userId);
+        const isSpecExists = await specs_repository_1.SpecRepository.getSpecOutputCheck(specId);
         if (!isSpecExists) {
             throw new errorHandler_1.default(404, "Spec not found");
         }
+        console.log(validatedBody);
         const isUpdated = await specs_repository_1.SpecRepository.updateSpecs(userId, specId, validatedBody);
         if (!isUpdated) {
             throw new errorHandler_1.default(500, "Failed to update specs");

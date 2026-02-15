@@ -108,18 +108,21 @@ class SpecRepository {
     }
     static async getSpecOutputCheck(specId) {
         const specOutPutCollection = dbConnection_1.default.getDB().collection(this.specOutputCollectionName);
+        console.log("Spec id", specId);
         const data = await specOutPutCollection.findOne({
             _id: new mongodb_1.ObjectId(specId),
         }, { projection: { _id: 1 } });
+        console.log("Edit shit check", data);
         return Boolean(data?._id);
     }
     static async updateSpecs(userId, specId, updatedData) {
         const specOutPutCollection = dbConnection_1.default.getDB().collection(this.specOutputCollectionName);
+        console.log("Updated data check", updatedData);
         const { modifiedCount } = await specOutPutCollection.updateOne({
             _id: new mongodb_1.ObjectId(specId),
             userId: new mongodb_1.ObjectId(userId),
         }, {
-            $set: { ...updatedData },
+            $set: { ...updatedData, updatedAt: new Date() },
         });
         return modifiedCount > 0;
     }

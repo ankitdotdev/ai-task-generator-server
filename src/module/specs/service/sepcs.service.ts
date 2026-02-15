@@ -102,11 +102,13 @@ class SpecsService {
 
     const validatedBody = SpecsValidator.updateSpecOutputValidator(data);
 
-    const isSpecExists = await SpecRepository.getSpecOutputCheck(userId);
+    const isSpecExists = await SpecRepository.getSpecOutputCheck(specId);
 
     if (!isSpecExists) {
       throw new ThrowError(404, "Spec not found");
     }
+
+    console.log(validatedBody);
 
     const isUpdated = await SpecRepository.updateSpecs(
       userId,
