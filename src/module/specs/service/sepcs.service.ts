@@ -5,7 +5,7 @@ import queryModel from "../../ai/hugging.ai.service";
 import {
   AISpecOutput,
   GenerateSpecInput,
-  SpecInput,
+  SpecListItem,
 } from "../model/specs.model";
 import SpecsRepository, {
   SpecRepository,
@@ -81,7 +81,7 @@ class SpecsService {
     };
   }
 
-  static async getSpecsListService(userId: string): Promise<SpecInput[]> {
+  static async getSpecsListService(userId: string): Promise<SpecListItem[]> {
     const data = await SpecRepository.getSpecList(userId);
 
     return data;

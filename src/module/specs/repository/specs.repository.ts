@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import {
   AISpecOutput,
   GenerateSpecInput,
-  SpecInput,
+  SpecListItem,
 } from "../model/specs.model";
 import Database from "../../../config/dbConnection";
 import ThrowError from "../../../middleware/errorHandler";
@@ -113,18 +113,55 @@ export class SpecRepository {
     };
   }
 
-  static async getSpecList(userId: string): Promise<SpecInput[]> {
-    const specOutputCollection = Database.getDB().collection<SpecInput>(
-      this.specOutputCollectionName,
-    );
+  static async getSpecList(userId: string): Promise<SpecListItem[]> {
+    const db = Database.getDB();
+
+    const specOutputCollection = db.collection(this.specOutputCollectionName);
 
     const data = await specOutputCollection
-      .find(
-        { userId: new ObjectId(userId), version: 1 },
-        { projection: { _id: 1, title: 1 } },
-      )
-      .sort({ _id: -1 }) // optional: newest first
-      .limit(5)
+      .aggregate<SpecListItem>([
+        // ✅ THIS FIXES THE ERROR
+
+        {
+          $lookup: {
+            from: this.specInputCollectionName,
+
+            localField: "specInputId",
+
+            foreignField: "_id",
+
+            as: "inputDoc",
+          },
+        },
+
+        {
+          $unwind: "$inputDoc",
+        },
+
+        {
+          $match: {
+            "inputDoc.userId": new ObjectId(userId),
+          },
+        },
+
+        {
+          $project: {
+            _id: 1,
+
+            title: "$inputDoc.title",
+          },
+        },
+
+        {
+          $sort: {
+            _id: -1,
+          },
+        },
+
+        {
+          $limit: 5,
+        },
+      ])
       .toArray();
 
     return data;

@@ -67,11 +67,42 @@ class SpecRepository {
         };
     }
     static async getSpecList(userId) {
-        const specOutputCollection = dbConnection_1.default.getDB().collection(this.specOutputCollectionName);
+        const db = dbConnection_1.default.getDB();
+        const specOutputCollection = db.collection(this.specOutputCollectionName);
         const data = await specOutputCollection
-            .find({ userId: new mongodb_1.ObjectId(userId), version: 1 }, { projection: { _id: 1, title: 1 } })
-            .sort({ _id: -1 }) // optional: newest first
-            .limit(5)
+            .aggregate([
+            // ✅ THIS FIXES THE ERROR
+            {
+                $lookup: {
+                    from: this.specInputCollectionName,
+                    localField: "specInputId",
+                    foreignField: "_id",
+                    as: "inputDoc",
+                },
+            },
+            {
+                $unwind: "$inputDoc",
+            },
+            {
+                $match: {
+                    "inputDoc.userId": new mongodb_1.ObjectId(userId),
+                },
+            },
+            {
+                $project: {
+                    _id: 1,
+                    title: "$inputDoc.title",
+                },
+            },
+            {
+                $sort: {
+                    _id: -1,
+                },
+            },
+            {
+                $limit: 5,
+            },
+        ])
             .toArray();
         return data;
     }
