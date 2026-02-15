@@ -10,20 +10,14 @@ const errorHandler_1 = __importDefault(require("../../../middleware/errorHandler
 class SpecRepository {
     static async storeInputOutputOfSpec(inputData, outputData, userId, specInputId) {
         const db = dbConnection_1.default.getDB();
-        // Collections for input metadata and versioned outputs
         const inputCollection = db.collection(this.specInputCollectionName);
         const outputCollection = db.collection(this.specOutputCollectionName);
-        // Ensure user context exists
         if (!userId) {
             throw new errorHandler_1.default(400, "User ID is required");
         }
         let finalSpecInputId;
         let version = 1;
-        /**
-         * Case 1: New Spec Creation
-         * - Insert input document
-         * - Initialize version to 1
-         */
+        // CASE 1: New Spec
         if (!specInputId) {
             const inputInsertResult = await inputCollection.insertOne({
                 userId: new mongodb_1.ObjectId(userId),
@@ -36,14 +30,9 @@ class SpecRepository {
             finalSpecInputId = inputInsertResult.insertedId;
             version = 1;
         }
+        // CASE 2: Regeneration
         else {
-            /**
-             * Case 2: Regeneration of Existing Spec
-             * - Validate ownership
-             * - Increment version based on existing outputs
-             */
             finalSpecInputId = new mongodb_1.ObjectId(specInputId);
-            // Verify spec belongs to user
             const existingInput = await inputCollection.findOne({
                 _id: finalSpecInputId,
                 userId: new mongodb_1.ObjectId(userId),
@@ -51,31 +40,30 @@ class SpecRepository {
             if (!existingInput) {
                 throw new errorHandler_1.default(404, "Spec input not found");
             }
-            // Determine next version number
             const existingVersionsCount = await outputCollection.countDocuments({
                 specInputId: finalSpecInputId,
             });
             version = existingVersionsCount + 1;
         }
-        /**
-         * Insert Versioned Output
-         * - Each regeneration creates a new version
-         * - Input remains immutable
-         */
-        const outputInsertResult = await outputCollection.insertOne({
+        // Create output document
+        const generatedAt = new Date();
+        const outputDoc = {
             specInputId: finalSpecInputId,
             version,
             output: outputData,
-            generatedAt: new Date(),
-        });
+            userId: new mongodb_1.ObjectId(userId),
+            generatedAt,
+        };
+        const outputInsertResult = await outputCollection.insertOne(outputDoc);
         if (!outputInsertResult.insertedId) {
             throw new errorHandler_1.default(500, "Failed to store spec output");
         }
-        // Return identifiers and version metadata
+        // Return everything needed by frontend
         return {
             inputId: finalSpecInputId.toString(),
             outputId: outputInsertResult.insertedId.toString(),
             version,
+            generatedAt,
         };
     }
     static async getSpecList(userId) {
@@ -103,6 +91,14 @@ class SpecRepository {
             $set: { ...updatedData },
         });
         return modifiedCount > 0;
+    }
+    static async getSpecOutputData(userId, specId) {
+        const specOutputCollection = dbConnection_1.default.getDB().collection(this.specOutputCollectionName);
+        const data = (await specOutputCollection.findOne({
+            _id: new mongodb_1.ObjectId(specId),
+            userId: new mongodb_1.ObjectId(userId),
+        }));
+        return data;
     }
 }
 exports.SpecRepository = SpecRepository;

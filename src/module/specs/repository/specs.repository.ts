@@ -24,15 +24,19 @@ export class SpecRepository {
     inputData: GenerateSpecInput,
     outputData: any,
     userId: string,
-    specInputId?: string, // optional for regeneration
-  ): Promise<{ inputId: string; outputId: string; version: number }> {
+    specInputId?: string,
+  ): Promise<{
+    inputId: string;
+    outputId: string;
+    version: number;
+    generatedAt: Date;
+  }> {
     const db = Database.getDB();
 
-    // Collections for input metadata and versioned outputs
     const inputCollection = db.collection(this.specInputCollectionName);
+
     const outputCollection = db.collection(this.specOutputCollectionName);
 
-    // Ensure user context exists
     if (!userId) {
       throw new ThrowError(400, "User ID is required");
     }
@@ -40,15 +44,13 @@ export class SpecRepository {
     let finalSpecInputId: ObjectId;
     let version = 1;
 
-    /**
-     * Case 1: New Spec Creation
-     * - Insert input document
-     * - Initialize version to 1
-     */
+    // CASE 1: New Spec
     if (!specInputId) {
       const inputInsertResult = await inputCollection.insertOne({
         userId: new ObjectId(userId),
+
         ...inputData,
+
         createdAt: new Date(),
       });
 
@@ -57,18 +59,17 @@ export class SpecRepository {
       }
 
       finalSpecInputId = inputInsertResult.insertedId;
+
       version = 1;
-    } else {
-      /**
-       * Case 2: Regeneration of Existing Spec
-       * - Validate ownership
-       * - Increment version based on existing outputs
-       */
+    }
+
+    // CASE 2: Regeneration
+    else {
       finalSpecInputId = new ObjectId(specInputId);
 
-      // Verify spec belongs to user
       const existingInput = await inputCollection.findOne({
         _id: finalSpecInputId,
+
         userId: new ObjectId(userId),
       });
 
@@ -76,7 +77,6 @@ export class SpecRepository {
         throw new ThrowError(404, "Spec input not found");
       }
 
-      // Determine next version number
       const existingVersionsCount = await outputCollection.countDocuments({
         specInputId: finalSpecInputId,
       });
@@ -84,27 +84,32 @@ export class SpecRepository {
       version = existingVersionsCount + 1;
     }
 
-    /**
-     * Insert Versioned Output
-     * - Each regeneration creates a new version
-     * - Input remains immutable
-     */
-    const outputInsertResult = await outputCollection.insertOne({
+    // Create output document
+    const generatedAt = new Date();
+
+    const outputDoc = {
       specInputId: finalSpecInputId,
+
       version,
+
       output: outputData,
-      generatedAt: new Date(),
-    });
+      userId: new ObjectId(userId),
+
+      generatedAt,
+    };
+
+    const outputInsertResult = await outputCollection.insertOne(outputDoc);
 
     if (!outputInsertResult.insertedId) {
       throw new ThrowError(500, "Failed to store spec output");
     }
 
-    // Return identifiers and version metadata
+    // Return everything needed by frontend
     return {
       inputId: finalSpecInputId.toString(),
       outputId: outputInsertResult.insertedId.toString(),
       version,
+      generatedAt,
     };
   }
 
@@ -160,6 +165,22 @@ export class SpecRepository {
     );
 
     return modifiedCount > 0;
+  }
+
+  static async getSpecOutputData(
+    userId: string,
+    specId: string,
+  ): Promise<AISpecOutput> {
+    const specOutputCollection = Database.getDB().collection<AISpecOutput>(
+      this.specOutputCollectionName,
+    );
+
+    const data = (await specOutputCollection.findOne({
+      _id: new ObjectId(specId),
+      userId: new ObjectId(userId),
+    })) as AISpecOutput;
+
+    return data;
   }
 }
 

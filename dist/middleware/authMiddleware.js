@@ -10,7 +10,6 @@ const mongodb_1 = require("mongodb");
 class AuthMiddleware {
     static async validateToken(req, res, next) {
         const authHeader = req.headers.authorization;
-        console.log(authHeader);
         if (!authHeader) {
             return (0, response_handler_1.sendError)(res, 401, "Auth header is missing");
         }
@@ -33,7 +32,6 @@ class AuthMiddleware {
             next();
         }
         catch (error) {
-            console.log(error);
             return (0, response_handler_1.sendError)(res, 401, "Invalid or expired token");
         }
     }

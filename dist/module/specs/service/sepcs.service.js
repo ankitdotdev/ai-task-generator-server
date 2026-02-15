@@ -74,7 +74,7 @@ class SpecsService {
         const storeResult = await specs_repository_1.default.storeInputOutputOfSpec(validatedBody, parsedOutput, userId, specInputId);
         // Return versioned result to controller
         return {
-            specInputId: storeResult.inputId,
+            specId: storeResult.outputId,
             version: storeResult.version,
             output: parsedOutput,
         };
@@ -100,6 +100,13 @@ class SpecsService {
             throw new errorHandler_1.default(500, "Failed to update specs");
         }
         return;
+    }
+    static async getSpecsOutputData(userId, specId) {
+        const data = await specs_repository_1.SpecRepository.getSpecOutputData(userId, specId);
+        if (!data) {
+            throw new errorHandler_1.default(404, "Spec not found");
+        }
+        return data;
     }
 }
 exports.default = SpecsService;

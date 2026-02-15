@@ -29,7 +29,7 @@ class SpecsService {
     data: GenerateSpecInput,
     specInputId?: string,
   ): Promise<{
-    specInputId: string;
+    specId: string;
     version: number;
     output: any;
   }> {
@@ -75,7 +75,7 @@ class SpecsService {
 
     // Return versioned result to controller
     return {
-      specInputId: storeResult.inputId,
+      specId: storeResult.outputId,
       version: storeResult.version,
       output: parsedOutput,
     };
@@ -118,6 +118,19 @@ class SpecsService {
       throw new ThrowError(500, "Failed to update specs");
     }
     return;
+  }
+
+  static async getSpecsOutputData(
+    userId: string,
+    specId: string,
+  ): Promise<AISpecOutput> {
+    const data = await SpecRepository.getSpecOutputData(userId, specId);
+
+    if (!data) {
+      throw new ThrowError(404, "Spec not found");
+    }
+
+    return data;
   }
 }
 
