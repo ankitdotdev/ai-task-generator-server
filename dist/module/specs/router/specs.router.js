@@ -13,4 +13,5 @@ specsRouter.get("/", specs_controller_1.default.getSpecsList);
 specsRouter.post("/", specs_controller_1.default.generateSpecs);
 specsRouter.get("/:id", specs_controller_1.default.getSpecsOutputData);
 specsRouter.patch("/:id", specs_controller_1.default.updateSpecs);
+specsRouter.delete("/:id", specs_controller_1.default.deleteSpecs);
 exports.default = specsRouter;

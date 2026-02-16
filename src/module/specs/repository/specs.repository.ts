@@ -120,7 +120,6 @@ export class SpecRepository {
 
     const data = await specOutputCollection
       .aggregate<SpecListItem>([
-        // ✅ THIS FIXES THE ERROR
 
         {
           $lookup: {
@@ -149,6 +148,7 @@ export class SpecRepository {
             _id: 1,
 
             title: "$inputDoc.title",
+            createdAt: "$inputDoc.createdAt",
           },
         },
 
@@ -219,6 +219,33 @@ export class SpecRepository {
     })) as AISpecOutput;
 
     return data;
+  }
+
+  static async deleteSpecs(
+    userId: string,
+    specId: string,
+    specInputId: string | ObjectId,
+  ): Promise<boolean> {
+    const db = Database.getDB();
+
+    const specOutputCollection = db.collection(this.specOutputCollectionName);
+    const specInputCollection = db.collection(this.specInputCollectionName);
+
+    // Run both deletions in parallel
+    const [inputResult, outputResult] = await Promise.all([
+      specInputCollection.deleteOne({
+        _id: new ObjectId(specInputId),
+        userId: new ObjectId(userId),
+      }),
+
+      specOutputCollection.deleteOne({
+        _id: new ObjectId(specId),
+        userId: new ObjectId(userId),
+      }),
+    ]);
+
+    // Return true if BOTH deleted
+    return inputResult.deletedCount > 0 && outputResult.deletedCount > 0;
   }
 }
 

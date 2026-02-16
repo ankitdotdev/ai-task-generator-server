@@ -109,5 +109,16 @@ class SpecsService {
         }
         return data;
     }
+    static async deleteSpecs(userId, specId) {
+        const data = await specs_repository_1.SpecRepository.getSpecOutputData(userId, specId);
+        if (!data) {
+            throw new errorHandler_1.default(404, "No task found to delete");
+        }
+        const result = await specs_repository_1.SpecRepository.deleteSpecs(userId, specId, data.specInputId);
+        if (!result) {
+            throw new errorHandler_1.default(500, "Failed to delete");
+        }
+        return;
+    }
 }
 exports.default = SpecsService;

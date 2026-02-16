@@ -71,7 +71,6 @@ class SpecRepository {
         const specOutputCollection = db.collection(this.specOutputCollectionName);
         const data = await specOutputCollection
             .aggregate([
-            // ✅ THIS FIXES THE ERROR
             {
                 $lookup: {
                     from: this.specInputCollectionName,
@@ -92,6 +91,7 @@ class SpecRepository {
                 $project: {
                     _id: 1,
                     title: "$inputDoc.title",
+                    createdAt: "$inputDoc.createdAt",
                 },
             },
             {
@@ -133,6 +133,24 @@ class SpecRepository {
             userId: new mongodb_1.ObjectId(userId),
         }));
         return data;
+    }
+    static async deleteSpecs(userId, specId, specInputId) {
+        const db = dbConnection_1.default.getDB();
+        const specOutputCollection = db.collection(this.specOutputCollectionName);
+        const specInputCollection = db.collection(this.specInputCollectionName);
+        // Run both deletions in parallel
+        const [inputResult, outputResult] = await Promise.all([
+            specInputCollection.deleteOne({
+                _id: new mongodb_1.ObjectId(specInputId),
+                userId: new mongodb_1.ObjectId(userId),
+            }),
+            specOutputCollection.deleteOne({
+                _id: new mongodb_1.ObjectId(specId),
+                userId: new mongodb_1.ObjectId(userId),
+            }),
+        ]);
+        // Return true if BOTH deleted
+        return inputResult.deletedCount > 0 && outputResult.deletedCount > 0;
     }
 }
 exports.SpecRepository = SpecRepository;
