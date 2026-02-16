@@ -19,7 +19,6 @@ class AuthMiddleware {
   static async validateToken(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
 
-    console.log(authHeader);
     if (!authHeader) {
       return sendError(res, 401, "Auth header is missing");
     }
@@ -50,7 +49,6 @@ class AuthMiddleware {
 
       next();
     } catch (error) {
-      console.log(error);
       return sendError(res, 401, "Invalid or expired token");
     }
   }

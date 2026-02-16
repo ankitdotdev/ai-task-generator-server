@@ -39,7 +39,7 @@ export interface AISpecOutput {
 
 
 
-export interface SpecInput {
+export interface SpecListItem  {
   _id: ObjectId;
   title: string;
 }

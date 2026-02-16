@@ -92,5 +92,55 @@ class SpecsController {
             }
         }
     }
+    static async getSpecsOutputData(req, res) {
+        try {
+            const userId = req.user?.userId;
+            const specId = req.params.id;
+            if (!specId) {
+                return (0, response_handler_1.sendError)(res, 400, "Spec id is missing");
+            }
+            const data = await sepcs_service_1.default.getSpecsOutputData(userId, specId);
+            return (0, response_handler_1.sendSuccess)(res, 200, "Data retrieved successfully", data);
+        }
+        catch (error) {
+            // Handle known errors thrown within the application
+            if (error instanceof errorHandler_1.default) {
+                return (0, response_handler_1.sendError)(res, error.statusCode, error.message);
+            }
+            else if (error instanceof Error) {
+                // Handle unexpected errors
+                return (0, response_handler_1.sendError)(res, 500, "Internal Server Error");
+            }
+            else {
+                // Handle unknown errors
+                return (0, response_handler_1.sendError)(res, 500, "Internal Server Error");
+            }
+        }
+    }
+    static async deleteSpecs(req, res) {
+        try {
+            const userId = req.user?.userId;
+            const specId = req.params.id;
+            if (!specId) {
+                return (0, response_handler_1.sendError)(res, 400, "Spec id missing");
+            }
+            await sepcs_service_1.default.deleteSpecs(userId, specId);
+            return (0, response_handler_1.sendSuccess)(res, 200, "Task Deleted Succesfully");
+        }
+        catch (error) {
+            // Handle known errors thrown within the application
+            if (error instanceof errorHandler_1.default) {
+                return (0, response_handler_1.sendError)(res, error.statusCode, error.message);
+            }
+            else if (error instanceof Error) {
+                // Handle unexpected errors
+                return (0, response_handler_1.sendError)(res, 500, "Internal Server Error");
+            }
+            else {
+                // Handle unknown errors
+                return (0, response_handler_1.sendError)(res, 500, "Internal Server Error");
+            }
+        }
+    }
 }
 exports.default = SpecsController;

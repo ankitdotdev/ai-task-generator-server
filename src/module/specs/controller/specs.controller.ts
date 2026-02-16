@@ -85,10 +85,61 @@ class SpecsController {
       if (!specId) {
         return sendError(res, 400, "Spec id missing");
       }
-
       await SpecsService.updateSpecs(userId, specId, req.body);
 
       return sendSuccess(res, 200, "Specs Updated Succesfully");
+    } catch (error) {
+      // Handle known errors thrown within the application
+      if (error instanceof ThrowError) {
+        return sendError(res, error.statusCode, error.message);
+      } else if (error instanceof Error) {
+        // Handle unexpected errors
+
+        return sendError(res, 500, "Internal Server Error");
+      } else {
+        // Handle unknown errors
+        return sendError(res, 500, "Internal Server Error");
+      }
+    }
+  }
+  static async getSpecsOutputData(req: Request, res: Response): Promise<any> {
+    try {
+      const userId = req.user?.userId as string;
+      const specId = req.params.id as string;
+
+      if (!specId) {
+        return sendError(res, 400, "Spec id is missing");
+      }
+
+      const data = await SpecsService.getSpecsOutputData(userId, specId);
+
+      return sendSuccess(res, 200, "Data retrieved successfully", data);
+    } catch (error) {
+      // Handle known errors thrown within the application
+      if (error instanceof ThrowError) {
+        return sendError(res, error.statusCode, error.message);
+      } else if (error instanceof Error) {
+        // Handle unexpected errors
+
+        return sendError(res, 500, "Internal Server Error");
+      } else {
+        // Handle unknown errors
+        return sendError(res, 500, "Internal Server Error");
+      }
+    }
+  }
+
+  static async deleteSpecs(req: Request, res: Response): Promise<any> {
+    try {
+      const userId = req.user?.userId as string;
+
+      const specId = req.params.id as string;
+      if (!specId) {
+        return sendError(res, 400, "Spec id missing");
+      }
+      await SpecsService.deleteSpecs(userId, specId);
+
+      return sendSuccess(res, 200, "Task Deleted Succesfully");
     } catch (error) {
       // Handle known errors thrown within the application
       if (error instanceof ThrowError) {

@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import {
   AISpecOutput,
   GenerateSpecInput,
-  SpecInput,
+  SpecListItem,
 } from "../model/specs.model";
 import Database from "../../../config/dbConnection";
 import ThrowError from "../../../middleware/errorHandler";
@@ -24,15 +24,19 @@ export class SpecRepository {
     inputData: GenerateSpecInput,
     outputData: any,
     userId: string,
-    specInputId?: string, // optional for regeneration
-  ): Promise<{ inputId: string; outputId: string; version: number }> {
+    specInputId?: string,
+  ): Promise<{
+    inputId: string;
+    outputId: string;
+    version: number;
+    generatedAt: Date;
+  }> {
     const db = Database.getDB();
 
-    // Collections for input metadata and versioned outputs
     const inputCollection = db.collection(this.specInputCollectionName);
+
     const outputCollection = db.collection(this.specOutputCollectionName);
 
-    // Ensure user context exists
     if (!userId) {
       throw new ThrowError(400, "User ID is required");
     }
@@ -40,15 +44,13 @@ export class SpecRepository {
     let finalSpecInputId: ObjectId;
     let version = 1;
 
-    /**
-     * Case 1: New Spec Creation
-     * - Insert input document
-     * - Initialize version to 1
-     */
+    // CASE 1: New Spec
     if (!specInputId) {
       const inputInsertResult = await inputCollection.insertOne({
         userId: new ObjectId(userId),
+
         ...inputData,
+
         createdAt: new Date(),
       });
 
@@ -57,18 +59,17 @@ export class SpecRepository {
       }
 
       finalSpecInputId = inputInsertResult.insertedId;
+
       version = 1;
-    } else {
-      /**
-       * Case 2: Regeneration of Existing Spec
-       * - Validate ownership
-       * - Increment version based on existing outputs
-       */
+    }
+
+    // CASE 2: Regeneration
+    else {
       finalSpecInputId = new ObjectId(specInputId);
 
-      // Verify spec belongs to user
       const existingInput = await inputCollection.findOne({
         _id: finalSpecInputId,
+
         userId: new ObjectId(userId),
       });
 
@@ -76,7 +77,6 @@ export class SpecRepository {
         throw new ThrowError(404, "Spec input not found");
       }
 
-      // Determine next version number
       const existingVersionsCount = await outputCollection.countDocuments({
         specInputId: finalSpecInputId,
       });
@@ -84,42 +84,84 @@ export class SpecRepository {
       version = existingVersionsCount + 1;
     }
 
-    /**
-     * Insert Versioned Output
-     * - Each regeneration creates a new version
-     * - Input remains immutable
-     */
-    const outputInsertResult = await outputCollection.insertOne({
+    // Create output document
+    const generatedAt = new Date();
+
+    const outputDoc = {
       specInputId: finalSpecInputId,
+
       version,
+
       output: outputData,
-      generatedAt: new Date(),
-    });
+      userId: new ObjectId(userId),
+
+      generatedAt,
+    };
+
+    const outputInsertResult = await outputCollection.insertOne(outputDoc);
 
     if (!outputInsertResult.insertedId) {
       throw new ThrowError(500, "Failed to store spec output");
     }
 
-    // Return identifiers and version metadata
+    // Return everything needed by frontend
     return {
       inputId: finalSpecInputId.toString(),
       outputId: outputInsertResult.insertedId.toString(),
       version,
+      generatedAt,
     };
   }
 
-  static async getSpecList(userId: string): Promise<SpecInput[]> {
-    const specOutputCollection = Database.getDB().collection<SpecInput>(
-      this.specOutputCollectionName,
-    );
+  static async getSpecList(userId: string): Promise<SpecListItem[]> {
+    const db = Database.getDB();
+
+    const specOutputCollection = db.collection(this.specOutputCollectionName);
 
     const data = await specOutputCollection
-      .find(
-        { userId: new ObjectId(userId), version: 1 },
-        { projection: { _id: 1, title: 1 } },
-      )
-      .sort({ _id: -1 }) // optional: newest first
-      .limit(5)
+      .aggregate<SpecListItem>([
+
+        {
+          $lookup: {
+            from: this.specInputCollectionName,
+
+            localField: "specInputId",
+
+            foreignField: "_id",
+
+            as: "inputDoc",
+          },
+        },
+
+        {
+          $unwind: "$inputDoc",
+        },
+
+        {
+          $match: {
+            "inputDoc.userId": new ObjectId(userId),
+          },
+        },
+
+        {
+          $project: {
+            _id: 1,
+
+            title: "$inputDoc.title",
+            createdAt: "$inputDoc.createdAt",
+          },
+        },
+
+        {
+          $sort: {
+            _id: -1,
+          },
+        },
+
+        {
+          $limit: 5,
+        },
+      ])
       .toArray();
 
     return data;
@@ -129,7 +171,7 @@ export class SpecRepository {
     const specOutPutCollection = Database.getDB().collection(
       this.specOutputCollectionName,
     );
-
+    console.log("Spec id", specId);
     const data = await specOutPutCollection.findOne(
       {
         _id: new ObjectId(specId),
@@ -137,6 +179,7 @@ export class SpecRepository {
       { projection: { _id: 1 } },
     );
 
+    console.log("Edit shit check", data);
     return Boolean(data?._id);
   }
 
@@ -148,18 +191,61 @@ export class SpecRepository {
     const specOutPutCollection = Database.getDB().collection(
       this.specOutputCollectionName,
     );
-
+    console.log("Updated data check", updatedData);
     const { modifiedCount } = await specOutPutCollection.updateOne(
       {
         _id: new ObjectId(specId),
         userId: new ObjectId(userId),
       },
       {
-        $set: { ...updatedData },
+        $set: { ...updatedData, updatedAt: new Date() },
       },
     );
 
     return modifiedCount > 0;
+  }
+
+  static async getSpecOutputData(
+    userId: string,
+    specId: string,
+  ): Promise<AISpecOutput> {
+    const specOutputCollection = Database.getDB().collection<AISpecOutput>(
+      this.specOutputCollectionName,
+    );
+
+    const data = (await specOutputCollection.findOne({
+      _id: new ObjectId(specId),
+      userId: new ObjectId(userId),
+    })) as AISpecOutput;
+
+    return data;
+  }
+
+  static async deleteSpecs(
+    userId: string,
+    specId: string,
+    specInputId: string | ObjectId,
+  ): Promise<boolean> {
+    const db = Database.getDB();
+
+    const specOutputCollection = db.collection(this.specOutputCollectionName);
+    const specInputCollection = db.collection(this.specInputCollectionName);
+
+    // Run both deletions in parallel
+    const [inputResult, outputResult] = await Promise.all([
+      specInputCollection.deleteOne({
+        _id: new ObjectId(specInputId),
+        userId: new ObjectId(userId),
+      }),
+
+      specOutputCollection.deleteOne({
+        _id: new ObjectId(specId),
+        userId: new ObjectId(userId),
+      }),
+    ]);
+
+    // Return true if BOTH deleted
+    return inputResult.deletedCount > 0 && outputResult.deletedCount > 0;
   }
 }
 

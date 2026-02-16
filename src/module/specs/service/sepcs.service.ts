@@ -5,7 +5,7 @@ import queryModel from "../../ai/hugging.ai.service";
 import {
   AISpecOutput,
   GenerateSpecInput,
-  SpecInput,
+  SpecListItem,
 } from "../model/specs.model";
 import SpecsRepository, {
   SpecRepository,
@@ -29,7 +29,7 @@ class SpecsService {
     data: GenerateSpecInput,
     specInputId?: string,
   ): Promise<{
-    specInputId: string;
+    specId: string;
     version: number;
     output: any;
   }> {
@@ -75,13 +75,13 @@ class SpecsService {
 
     // Return versioned result to controller
     return {
-      specInputId: storeResult.inputId,
+      specId: storeResult.outputId,
       version: storeResult.version,
       output: parsedOutput,
     };
   }
 
-  static async getSpecsListService(userId: string): Promise<SpecInput[]> {
+  static async getSpecsListService(userId: string): Promise<SpecListItem[]> {
     const data = await SpecRepository.getSpecList(userId);
 
     return data;
@@ -102,11 +102,13 @@ class SpecsService {
 
     const validatedBody = SpecsValidator.updateSpecOutputValidator(data);
 
-    const isSpecExists = await SpecRepository.getSpecOutputCheck(userId);
+    const isSpecExists = await SpecRepository.getSpecOutputCheck(specId);
 
     if (!isSpecExists) {
       throw new ThrowError(404, "Spec not found");
     }
+
+    console.log(validatedBody);
 
     const isUpdated = await SpecRepository.updateSpecs(
       userId,
@@ -117,6 +119,35 @@ class SpecsService {
     if (!isUpdated) {
       throw new ThrowError(500, "Failed to update specs");
     }
+    return;
+  }
+
+  static async getSpecsOutputData(
+    userId: string,
+    specId: string,
+  ): Promise<AISpecOutput> {
+    const data = await SpecRepository.getSpecOutputData(userId, specId);
+
+    if (!data) {
+      throw new ThrowError(404, "Spec not found");
+    }
+
+    return data;
+  }
+
+  static async deleteSpecs(userId: string, specId: string): Promise<void> {
+    const data = await SpecRepository.getSpecOutputData(userId,specId);
+
+    if (!data) {
+      throw new ThrowError(404, "No task found to delete");
+    }
+
+    const result = await SpecRepository.deleteSpecs(userId, specId,data.specInputId);
+
+    if (!result) {
+      throw new ThrowError(500, "Failed to delete");
+    }
+
     return;
   }
 }

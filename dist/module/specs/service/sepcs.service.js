@@ -74,7 +74,7 @@ class SpecsService {
         const storeResult = await specs_repository_1.default.storeInputOutputOfSpec(validatedBody, parsedOutput, userId, specInputId);
         // Return versioned result to controller
         return {
-            specInputId: storeResult.inputId,
+            specId: storeResult.outputId,
             version: storeResult.version,
             output: parsedOutput,
         };
@@ -91,13 +91,32 @@ class SpecsService {
             throw new errorHandler_1.default(400, "Invalid Spec Id");
         }
         const validatedBody = specs_validator_1.default.updateSpecOutputValidator(data);
-        const isSpecExists = await specs_repository_1.SpecRepository.getSpecOutputCheck(userId);
+        const isSpecExists = await specs_repository_1.SpecRepository.getSpecOutputCheck(specId);
         if (!isSpecExists) {
             throw new errorHandler_1.default(404, "Spec not found");
         }
+        console.log(validatedBody);
         const isUpdated = await specs_repository_1.SpecRepository.updateSpecs(userId, specId, validatedBody);
         if (!isUpdated) {
             throw new errorHandler_1.default(500, "Failed to update specs");
+        }
+        return;
+    }
+    static async getSpecsOutputData(userId, specId) {
+        const data = await specs_repository_1.SpecRepository.getSpecOutputData(userId, specId);
+        if (!data) {
+            throw new errorHandler_1.default(404, "Spec not found");
+        }
+        return data;
+    }
+    static async deleteSpecs(userId, specId) {
+        const data = await specs_repository_1.SpecRepository.getSpecOutputData(userId, specId);
+        if (!data) {
+            throw new errorHandler_1.default(404, "No task found to delete");
+        }
+        const result = await specs_repository_1.SpecRepository.deleteSpecs(userId, specId, data.specInputId);
+        if (!result) {
+            throw new errorHandler_1.default(500, "Failed to delete");
         }
         return;
     }

@@ -8,6 +8,8 @@ specsRouter.use(AuthMiddleware.validateToken);
 specsRouter.use(AuthMiddleware.checkUserExists);
 specsRouter.get("/", SpecsController.getSpecsList);
 specsRouter.post("/", SpecsController.generateSpecs);
+specsRouter.get("/:id", SpecsController.getSpecsOutputData);
 specsRouter.patch("/:id", SpecsController.updateSpecs);
+specsRouter.delete("/:id", SpecsController.deleteSpecs);
 
 export default specsRouter;
