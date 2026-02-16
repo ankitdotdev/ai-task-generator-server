@@ -9,6 +9,7 @@ const dbConnection_1 = __importDefault(require("./config/dbConnection"));
 const auth_router_1 = __importDefault(require("./module/auth/router/auth.router"));
 const specs_router_1 = __importDefault(require("./module/specs/router/specs.router"));
 const cors_1 = __importDefault(require("cors"));
+const constants_router_1 = __importDefault(require("./constants/constants.router"));
 const app = (0, express_1.default)();
 // Use PORT from environment, fallback to 8001 for local development
 const port = process.env.PORT || 8001;
@@ -21,9 +22,7 @@ async function startServer() {
         // Middleware to parse incoming JSON requests
         app.use((0, cors_1.default)());
         app.use(express_1.default.json());
-        app.get("/health", (_req, res) => {
-            res.status(200).json({ status: "OK" });
-        });
+        app.use(constants_router_1.default);
         // Register Auth module routes
         app.use(`${baseUrl}/auth`, auth_router_1.default);
         app.use(`${baseUrl}/specs`, specs_router_1.default);
