@@ -4,6 +4,7 @@ import Database from "./config/dbConnection";
 import authRouter from "./module/auth/router/auth.router";
 import specsRouter from "./module/specs/router/specs.router";
 import cors from "cors";
+import constantRouter from "./constants/constants.router";
 const app = express();
 
 // Use PORT from environment, fallback to 8001 for local development
@@ -20,9 +21,8 @@ async function startServer() {
     // Middleware to parse incoming JSON requests
     app.use(cors());
     app.use(express.json());
-    app.get("/health", (_req, res) => {
-      res.status(200).json({ status: "OK" });
-    });
+
+    app.use(constantRouter);
     // Register Auth module routes
     app.use(`${baseUrl}/auth`, authRouter);
     app.use(`${baseUrl}/specs`, specsRouter);
