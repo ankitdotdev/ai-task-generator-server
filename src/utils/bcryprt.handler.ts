@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 // Hashes a plain-text password before storing it in the database
 // Uses salt rounds = 10 (balanced choice between security and performance)
